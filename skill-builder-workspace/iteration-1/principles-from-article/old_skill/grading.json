@@ -1,0 +1,118 @@
+{
+  "expectations": [
+    {
+      "text": "The skill turns the post into 3-7 principles, each stated as something the agent does, rather than a summary of the post",
+      "passed": true,
+      "evidence": "error-messages/SKILL.md has 6 distinct principles, each phrased as an instruction: (1) answer the three questions, 'Every message answers three questions: What happened? Why? What now?' (line 8); (2) always end in an action, '\"What now\" is the one that can never be missing... So every message ends in an action' (line 8); (3) code last, 'put it after the human sentences' (line 17); (4) blame the system, 'The thing that failed is the subject of the sentence, not \"you\"' (line 21); (5) say it once, in plain words, 'No \"Oops!\", no \"Uh oh\", no jokes, at most one short apology' (line 22); (6) put it next to the thing that broke, 'If the request or code shows a message placed away from its field, say so' (line 23). The build order in lines 14-17 turns the three questions into steps. Each principle is an action with a reason, not a summary."
+    },
+    {
+      "text": "The skill keeps the post's signature terms: the three questions (What happened? Why? What now?) and \"no dead ends\"",
+      "passed": false,
+      "evidence": "The three questions are kept: 'Every message answers three questions: **What happened? Why? What now?**' (line 8) and 'Empty states follow the same three questions' (line 25). The term \"no dead ends\" is not. A grep finds 'dead end' only once, in a sentence copied from the post: 'A message with no next step is a dead end, and dead ends are where people give up.' (line 8). The skill never names the rule 'no dead ends'. The rule is phrased as 'ends in an action' / 'It ends in a concrete action', and the Done-when list and the review instructions do not use the term. The concept is kept but the signature term is not, so this fails under strict grading. The call is borderline."
+    },
+    {
+      "text": "The skill makes sense without the post: no instruction depends on \"the post\" or \"the article\" for its meaning",
+      "passed": true,
+      "evidence": "A grep of SKILL.md for 'post|article|author|blog' finds nothing. The post's examples are copied in directly ('You entered an invalid date' / 'That date isn't in a format we can read. Try 14/03/2026', 'Contact support with code 4F2'), and the rules give their reasons ('Jokes age badly when someone has just lost their work', 'where people have to hunt for the problem')."
+    },
+    {
+      "text": "The skill's description has a \"Not for\" clause covering log messages or exception names",
+      "passed": true,
+      "evidence": "Description (line 3) ends: 'Not for log messages, exception or error class names, or other text only developers read.'"
+    },
+    {
+      "text": "The handoff gives 2-3 road-test prompts, including one that should not trigger the skill",
+      "passed": true,
+      "evidence": "handoff.md 'Road-test plan' lists 3 prompts: 1 the file upload over 25 MB (should run), 2 'Review these: ...' (should run), 3 'Add a log line and a custom exception class for when the payment webhook fails signature verification.' marked 'The skill should *not* run.' Each prompt says what success looks like. There is no missing-input prompt, but the assertion does not ask for one."
+    },
+    {
+      "text": "validate_skill.py reports 0 errors on the written skill folder",
+      "passed": true,
+      "evidence": "The caller confirmed it: 0 errors, 0 warnings. run-notes.md steps 8 and 9 also show 'PASSED: 0 error(s), 0 warning(s) in .../old_skill/outputs/error-messages', including the re-run after the sed rename."
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 1,
+    "total": 6,
+    "pass_rate": 0.83
+  },
+  "execution_metrics": {
+    "tool_calls": {},
+    "total_tool_calls": 0,
+    "total_steps": 10,
+    "errors_encountered": 0,
+    "output_chars": 11903,
+    "transcript_chars": 4413,
+    "notes": "No metrics.json. total_steps is the number of steps in run-notes.md. output_chars covers SKILL.md and handoff.md, and transcript_chars is run-notes.md. No subagents were used. The validator ran twice."
+  },
+  "timing": {
+    "executor_duration_seconds": 90.3,
+    "total_duration_seconds": 90.3,
+    "total_tokens": 62705
+  },
+  "claims": [
+    {
+      "claim": "SKILL.md is 42 lines long",
+      "type": "factual",
+      "verified": true,
+      "evidence": "The Read of SKILL.md shows 42 lines."
+    },
+    {
+      "claim": "One name per concept: the note is called the '`Assumed:` line' everywhere",
+      "type": "quality",
+      "verified": true,
+      "evidence": "Lines 16, 31 and 42 all say '`Assumed:` line'."
+    },
+    {
+      "claim": "Each trigger is a different request: writing, reviewing, empty-state copy",
+      "type": "quality",
+      "verified": true,
+      "evidence": "The description lists 'write, rewrite or review the wording of an error, a form validation message or an empty state'."
+    },
+    {
+      "claim": "The Done-when list catches the obvious shortcut",
+      "type": "quality",
+      "verified": false,
+      "evidence": "The list checks each message, but nothing makes a review cover every original message. There is also no rule against inventing an error code or support channel. 'Contact support with code 4F2' is shown as an example action with no warning not to make codes up."
+    },
+    {
+      "claim": "Empty states are not in the post",
+      "type": "factual",
+      "verified": true,
+      "evidence": "The post never mentions empty states. They come from the user's request, and the skill applies the three questions to them (line 25)."
+    }
+  ],
+  "user_notes_summary": {
+    "uncertainties": [
+      "How to apply the three questions to empty states",
+      "The review output format is invented",
+      "The placement rule may be too weak with text-only output",
+      "At most one apology is allowed",
+      "Install scope is personal"
+    ],
+    "needs_review": [],
+    "workarounds": [
+      "${CLAUDE_SKILL_DIR} was not set, so the validator ran by its absolute path"
+    ]
+  },
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "assertion": "The skill keeps the post's signature terms: the three questions (What happened? Why? What now?) and \"no dead ends\"",
+        "reason": "It is unclear whether a verbatim sentence that contains 'dead end' counts as keeping the term. Say whether the term must be used as the rule's name or label (as in the with_skill run) or just appear. I graded strictly: the term must name the rule."
+      },
+      {
+        "assertion": "The skill's description has a \"Not for\" clause covering log messages or exception names",
+        "reason": "The user dictated it, so any output that copies the prompt passes."
+      },
+      {
+        "reason": "No assertion covers the missing-key-input case: what the skill does when it doesn't know what broke. This run's skill has no ask-vs-guess rule, so with an underspecified prompt it will guess. The with_skill run handles this case."
+      },
+      {
+        "reason": "No assertion checks the guess-note contract (one line, only when the next step was guessed). This run puts an 'Assumed:' line after each message, not one note per reply. That reads the user's spec differently, and no assertion catches it."
+      }
+    ],
+    "overall": "Both runs score 5/6 but fail different assertions, so the pass rate hides real quality differences: review completeness, rules against invented codes, and ask-vs-guess. Assertions 3, 4 and 6 pass for nearly any output."
+  }
+}

@@ -1,0 +1,118 @@
+{
+  "expectations": [
+    {
+      "text": "The skill turns the post into 3-7 principles, each stated as something the agent does, rather than a summary of the post",
+      "passed": true,
+      "evidence": "error-message-copy/SKILL.md has 6 distinct principles, each phrased as an instruction: (1) the three questions, 'Every message answers the three questions: What happened? Why? What now?' (line 11); (2) no dead ends, '...and ends in a next step... If a message can't answer \"what now\", it isn't finished' (lines 10-11); (3) blame the system, 'the person must never be the one at fault' (line 19); (4) say it once, in plain words, 'No \"Oops!\", no \"Uh oh\", no jokes' (line 21); (5) error code last, 'show it rather than hiding it, but after the human sentences' (line 22); (6) next to the thing that broke, 'Write validation messages to sit beside the field they're about' (line 23). Steps 1 and 3 ('What happened, and why', 'Next step') break down the three questions and are not separate principles. The 0x80070057 point is kept as a one-line framing (line 8), not a rule. Each principle has an operational test, such as the 'you entered / you forgot' vs 'your account' test, so none of it reads as a summary of the post."
+    },
+    {
+      "text": "The skill keeps the post's signature terms: the three questions (What happened? Why? What now?) and \"no dead ends\"",
+      "passed": true,
+      "evidence": "Line 10 heading: '## The rule that matters most: no dead ends'. Line 11: 'Every message answers the three questions: **What happened? Why? What now?**'. Both terms are also used as review labels on line 32: 'the three questions (what happened or why is missing), no dead ends (what now is missing)'."
+    },
+    {
+      "text": "The skill makes sense without the post: no instruction depends on \"the post\" or \"the article\" for its meaning",
+      "passed": true,
+      "evidence": "A grep of SKILL.md for 'post|article|author|blog' finds nothing. The post's examples are copied in directly (0x80070057, 'You entered an invalid date' -> 'That date isn't in a format we can read. Try 14/03/2026', 'code 4F2'), and each rule states its own reason ('dead ends are where people give up', 'a distant message makes people hunt')."
+    },
+    {
+      "text": "The skill's description has a \"Not for\" clause covering log messages or exception names",
+      "passed": true,
+      "evidence": "Description (line 3) ends: 'Not for log messages, exception or error class names, or other text only developers read.'"
+    },
+    {
+      "text": "The handoff gives 2-3 road-test prompts, including one that should not trigger the skill",
+      "passed": false,
+      "evidence": "handoff.md 'Road-test plan' lists 4 prompts: 1 'Should trigger (review plus write)', 2 'Should trigger (empty state, with a code)', 3 'Missing key input: \"Write me an error message for the upload.\"', 4 'Should not trigger: \"Add a log line in payment_service.py ...\"'. The should-not-trigger prompt is there, but 4 is above the 2-3 range. skill-builder/SKILL.md line 110 also asks for '2–3 realistic prompts for a personal skill' and this skill is personal ('just for me'), so the run went past its own instruction. Three prompts (one should-trigger, one missing-input, one should-not-trigger) would have covered every required type."
+    },
+    {
+      "text": "validate_skill.py reports 0 errors on the written skill folder",
+      "passed": true,
+      "evidence": "The caller confirmed it: 0 errors, 0 warnings. run-notes.md step 10 (final run after the last edit) also shows 'PASSED: 0 error(s), 0 warning(s) in .../outputs/error-message-copy', exit=0."
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 1,
+    "total": 6,
+    "pass_rate": 0.83
+  },
+  "execution_metrics": {
+    "tool_calls": {},
+    "total_tool_calls": 0,
+    "total_steps": 11,
+    "errors_encountered": 0,
+    "output_chars": 19728,
+    "transcript_chars": 6302,
+    "notes": "No metrics.json. total_steps is the number of steps in run-notes.md. output_chars covers SKILL.md and handoff.md, and transcript_chars is run-notes.md. The run used 1 general-purpose subagent for a cold read and ran the validator twice."
+  },
+  "timing": {
+    "executor_duration_seconds": 215.0,
+    "total_duration_seconds": 215.0,
+    "total_tokens": 75966
+  },
+  "claims": [
+    {
+      "claim": "SKILL.md is 47 lines long and the description is 348 characters",
+      "type": "factual",
+      "verified": true,
+      "evidence": "The Read of SKILL.md shows 47 lines. I did not count the description length exactly, but it is in that range."
+    },
+    {
+      "claim": "A cold-read subagent raised 12 points, and the fixes were applied",
+      "type": "process",
+      "verified": true,
+      "evidence": "Every fix listed in run-notes step 9 is in the final SKILL.md: mixed-mode handling (line 28), check labels with scopes (line 32), 'Invalid email' example (line 18), the guess definition (line 15), the apology rule (line 21), you/your examples (line 19), title/body (line 30), editing source files (line 38)."
+    },
+    {
+      "claim": "One name per concept: 'the three questions', 'next step', 'error code', 'guess note', 'placement line'",
+      "type": "quality",
+      "verified": true,
+      "evidence": "These terms are used the same way throughout. Line 15 says 'the guess note described under Output' and line 35 has the exact Note format."
+    },
+    {
+      "claim": "The placement line is the only way 'next to the thing that broke' can affect text-only output",
+      "type": "quality",
+      "verified": true,
+      "evidence": "The reasoning holds, but it adds a second kind of note beyond the user's spec ('message text, plus a one-line note if it had to guess'). The handoff flags it as assumption 3."
+    }
+  ],
+  "user_notes_summary": {
+    "uncertainties": [
+      "The review-mode output format is invented. The user only specified output for writing.",
+      "The placement line goes past the user's output spec.",
+      "One short apology is allowed (the post bans only stacked apologies).",
+      "The missing-input road test assumes the skill should ask when what broke is unknown."
+    ],
+    "needs_review": [
+      "The placement note adds a second possible note line, against the user's 'plus a one-line note' output spec"
+    ],
+    "workarounds": []
+  },
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "assertion": "The skill's description has a \"Not for\" clause covering log messages or exception names",
+        "reason": "The user dictated this exclusion word for word, so any careless output that copies the prompt passes too. A more useful check: the exclusion is in the description, the body never tells the agent to handle log or exception text, and the closest wrong request (developer-facing error strings) is excluded."
+      },
+      {
+        "assertion": "The skill makes sense without the post: no instruction depends on \"the post\" or \"the article\" for its meaning",
+        "reason": "A careless output with none of the post's content passes trivially. Pair it with a check that the post's concrete examples (14/03/2026 rewrite, code-last ordering) appear in the skill."
+      },
+      {
+        "assertion": "validate_skill.py reports 0 errors on the written skill folder",
+        "reason": "Both runs pass. This is a hygiene gate and does not tell the runs apart."
+      },
+      {
+        "reason": "No assertion checks the user's own output contract: message text plus a one-line note ONLY when the next step was guessed. That is where the runs actually differ: a single note at the end vs an 'Assumed:' line per message, an extra placement note, and whether 'guessed' is defined. Add one, for example: 'The skill specifies the guess note's exact form and when it applies, and adds no other output the user didn't ask for (or flags any addition as an assumption).'"
+      },
+      {
+        "reason": "No assertion checks review mode, even though the user asked for 'write or review'. A discriminating check would require a verdict for every reviewed message, including ones that already pass."
+      },
+      {
+        "reason": "No assertion checks that the skill forbids inventing error codes or support channels. This is a plausible hallucination risk for this skill, and only this run guards against it."
+      }
+    ],
+    "overall": "Assertions 3, 4 and 6 pass for nearly any output. The principle-count and road-test-count assertions are the only ones with teeth, and here the road-test one failed on a technicality (4 prompts vs 2-3). Add assertions on output-contract fidelity and review mode."
+  }
+}

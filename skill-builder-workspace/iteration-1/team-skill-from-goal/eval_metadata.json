@@ -1,0 +1,14 @@
+{
+  "eval_name": "team-skill-from-goal",
+  "prompt": "I want a skill that writes the \"What's new\" release notes for our mobile app from the PRs merged in a release. I know you normally interview me, so here are my answers up front. Treat them as confirmed and go straight to writing it, I won't be around to reply.\n\n- Scope: only the App Store / Play Store \"What's new\" text. Not our internal CHANGELOG.md.\n- Trigger: automatically when someone asks for release notes or \"what's new\" text for an app version. It should not open for PR descriptions or for the internal changelog.\n- Input: a list of merged PR titles with their labels, pasted in or from `gh pr list`. Output: release-notes.md with two sections, iOS and Android, each 500 characters or less, because the Play Store cuts off anything longer and we keep both the same length.\n- Fixed rules: the 500-character limit; PRs labelled internal or chore are never mentioned; no ticket or PR numbers. Flexible: tone, friendly but plain.\n- Branches: a hotfix release gets exactly one line, \"Bug fixes and performance improvements.\"\n- Done: both sections at or under 500 characters, and every user-facing PR either mentioned or grouped into a line.\n- Failures: last time Claude wrote \"Refactor auth module (#4312)\", internal work with a ticket number, and the text was 900 characters so the Play Store cut it off mid-sentence.\n- Hidden knowledge: our PM wants features first, then fixes. We never say \"crash\", we say \"stability improvements\".\n- Vocabulary: \"user-facing PR\" means any PR without the internal or chore label.\n- Audience and home: the whole mobile team will use it, in both Claude Code and claude.ai.\n",
+  "assertions": [
+    "The written skill's SKILL.md frontmatter uses only the portable fields (name, description, license, compatibility, metadata, allowed-tools), because the skill must also run on claude.ai",
+    "validate_skill.py reports 0 errors on the written skill folder",
+    "The skill states the 500-character limit per section and gives the reason (the Play Store cuts off longer text)",
+    "The skill says PRs labelled internal or chore are never mentioned and that no ticket or PR numbers appear",
+    "The skill gives the hotfix branch with the exact line \"Bug fixes and performance improvements.\"",
+    "The skill's description has a \"Not for\" clause covering PR descriptions or the internal changelog",
+    "The skill's definition of done includes checking each section's character count",
+    "An evals.md next to the written SKILL.md holds 5-8 test prompts, including one that should not trigger the skill and one that leaves out a key input"
+  ]
+}

@@ -1,0 +1,439 @@
+{
+  "metadata": {
+    "skill_name": "skill-builder",
+    "skill_path": "<path/to/skill>",
+    "executor_model": "claude-opus-5-5",
+    "analyzer_model": "<model-name>",
+    "timestamp": "2026-11-16T17:01:45Z",
+    "evals_run": [
+      "principles-from-article",
+      "skill-from-session-transcript",
+      "team-skill-from-goal"
+    ],
+    "runs_per_configuration": 1
+  },
+  "runs": [
+    {
+      "eval_id": "principles-from-article",
+      "eval_name": "principles-from-article",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.83,
+        "passed": 5,
+        "failed": 1,
+        "total": 6,
+        "time_seconds": 215.0,
+        "tokens": 75966,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "The skill turns the post into 3-7 principles, each stated as something the agent does, rather than a summary of the post",
+          "passed": true,
+          "evidence": "error-message-copy/SKILL.md has 6 distinct principles, each phrased as an instruction: (1) the three questions, 'Every message answers the three questions: What happened? Why? What now?' (line 11); (2) no dead ends, '...and ends in a next step... If a message can't answer \"what now\", it isn't finished' (lines 10-11); (3) blame the system, 'the person must never be the one at fault' (line 19); (4) say it once, in plain words, 'No \"Oops!\", no \"Uh oh\", no jokes' (line 21); (5) error code last, 'show it rather than hiding it, but after the human sentences' (line 22); (6) next to the thing that broke, 'Write validation messages to sit beside the field they're about' (line 23). Steps 1 and 3 ('What happened, and why', 'Next step') break down the three questions and are not separate principles. The 0x80070057 point is kept as a one-line framing (line 8), not a rule. Each principle has an operational test, such as the 'you entered / you forgot' vs 'your account' test, so none of it reads as a summary of the post."
+        },
+        {
+          "text": "The skill keeps the post's signature terms: the three questions (What happened? Why? What now?) and \"no dead ends\"",
+          "passed": true,
+          "evidence": "Line 10 heading: '## The rule that matters most: no dead ends'. Line 11: 'Every message answers the three questions: **What happened? Why? What now?**'. Both terms are also used as review labels on line 32: 'the three questions (what happened or why is missing), no dead ends (what now is missing)'."
+        },
+        {
+          "text": "The skill makes sense without the post: no instruction depends on \"the post\" or \"the article\" for its meaning",
+          "passed": true,
+          "evidence": "A grep of SKILL.md for 'post|article|author|blog' finds nothing. The post's examples are copied in directly (0x80070057, 'You entered an invalid date' -> 'That date isn't in a format we can read. Try 14/03/2026', 'code 4F2'), and each rule states its own reason ('dead ends are where people give up', 'a distant message makes people hunt')."
+        },
+        {
+          "text": "The skill's description has a \"Not for\" clause covering log messages or exception names",
+          "passed": true,
+          "evidence": "Description (line 3) ends: 'Not for log messages, exception or error class names, or other text only developers read.'"
+        },
+        {
+          "text": "The handoff gives 2-3 road-test prompts, including one that should not trigger the skill",
+          "passed": false,
+          "evidence": "handoff.md 'Road-test plan' lists 4 prompts: 1 'Should trigger (review plus write)', 2 'Should trigger (empty state, with a code)', 3 'Missing key input: \"Write me an error message for the upload.\"', 4 'Should not trigger: \"Add a log line in payment_service.py ...\"'. The should-not-trigger prompt is there, but 4 is above the 2-3 range. skill-builder/SKILL.md line 110 also asks for '2\u20133 realistic prompts for a personal skill' and this skill is personal ('just for me'), so the run went past its own instruction. Three prompts (one should-trigger, one missing-input, one should-not-trigger) would have covered every required type."
+        },
+        {
+          "text": "validate_skill.py reports 0 errors on the written skill folder",
+          "passed": true,
+          "evidence": "The caller confirmed it: 0 errors, 0 warnings. run-notes.md step 10 (final run after the last edit) also shows 'PASSED: 0 error(s), 0 warning(s) in .../outputs/error-message-copy', exit=0."
+        }
+      ],
+      "notes": [
+        "The review-mode output format is invented. The user only specified output for writing.",
+        "The placement line goes past the user's output spec.",
+        "One short apology is allowed (the post bans only stacked apologies).",
+        "The missing-input road test assumes the skill should ask when what broke is unknown.",
+        "The placement note adds a second possible note line, against the user's 'plus a one-line note' output spec"
+      ]
+    },
+    {
+      "eval_id": "skill-from-session-transcript",
+      "eval_name": "skill-from-session-transcript",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 7,
+        "failed": 0,
+        "total": 7,
+        "time_seconds": 208.6,
+        "tokens": 79132,
+        "tool_calls": 21,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "The skill excludes accounts whose email ends in @example-test.com and says why (they are internal test accounts that inflate the count)",
+          "passed": true,
+          "evidence": "SKILL.md line 27: 'Any email ending `@example-test.com` (case-insensitive) is an internal account. Counting them was the first mismatch: weeks came out about 25 too high.' Script line 77: `.strip().lower().endswith(TEST_DOMAIN)` -> continue. Grader test: a 'qa@EXAMPLE-TEST.com' row in week 42 was dropped (week 42 = 1, not 2)."
+        },
+        {
+          "text": "The skill converts created_at from UTC to Europe/Oslo and groups by ISO week starting Monday, with the reason (to match the dashboard)",
+          "passed": true,
+          "evidence": "SKILL.md line 10: 'The numbers must match the dashboard. Three rules make them match ... count in Europe/Oslo time rather than UTC, and group by ISO week (Monday start)'; line 28: '`created_at` is stored in UTC, but the dashboard uses Europe/Oslo. Signups after 22:00 UTC on a Sunday (23:00 in winter) are already Monday in Oslo'. Script: `parse_utc(raw).astimezone(TZ)` with TZ=ZoneInfo('Europe/Oslo'); `week_monday` uses isoweekday; label `cur.isocalendar()[1]`. Grader test (--today 2026-11-16): 2026-10-11 22:30Z (CEST) -> week 42, 21:30Z -> week 41; 2026-11-08 22:30Z (CET) stays week 45, 23:30 -> week 46; year boundary run (--today 2026-01-12) labels 52, 1, 2 correctly."
+        },
+        {
+          "text": "The skill specifies the output table: week number, signups, and % change from the previous week rounded to one decimal",
+          "passed": true,
+          "evidence": "SKILL.md line 31: '% change. `(this week - previous week) / previous week`, rounded to one decimal, with a sign'; line 34: 'columns Week, Signups, % change and one row per reported week'. Script writes '| Week | Signups | % change |' and formats `{...:+.1f}%`; grader run produced e.g. '| 42 | 1 | -50.0% |'."
+        },
+        {
+          "text": "The pandas calculation is bundled as a script in scripts/ and SKILL.md gives the command to run it",
+          "passed": true,
+          "evidence": "scripts/weekly_signups.py exists; SKILL.md line 16: `python3 \"${CLAUDE_SKILL_DIR}/scripts/weekly_signups.py\" <path-to-csv>`. Note: the script reimplements the calculation with the standard library (csv + zoneinfo), not pandas; run-notes explain this was deliberate (no pandas dependency). Passed on the substance (calculation bundled + run command), not on literal pandas use. Script ran correctly on grader test CSVs."
+        },
+        {
+          "text": "The skill has no wording that only makes sense with the original session in mind (e.g. \"as discussed\", \"like last time\", \"the session\")",
+          "passed": true,
+          "evidence": "grep for 'as discussed|like last time|the session|yesterday|you said|earlier' in SKILL.md and script: no hits. Historical framing exists ('each one was found by a mismatch', 'Counting them was the first mismatch: weeks came out about 25 too high', 'That left each week off by a few') but each is self-contained and explains itself without the session."
+        },
+        {
+          "text": "The handoff lists the assumptions made for gaps the session didn't answer (e.g. where the CSV lives or how many weeks to report)",
+          "passed": true,
+          "evidence": "handoff.md section 'Assumptions I made (you weren't around, so please check these)' lists 10 items, incl. '\"Last 6 weeks\" means the last 6 complete ISO weeks', 'Columns are `created_at` and `email`', '`weekly_signups.md` is replaced each run', 'Timestamps without a timezone are read as UTC'. CSV location is covered in SKILL.md step 1 ($ARGUMENTS or signups.csv in working dir, otherwise ask) though not listed as a numbered assumption."
+        },
+        {
+          "text": "validate_skill.py reports 0 errors on the written skill folder",
+          "passed": true,
+          "evidence": "Grader reran: 'PASSED: 0 error(s), 1 warning(s)' (WARN argument-hint: Claude Code only), acceptable since user said Claude Code only. Matches run-notes step 11."
+        }
+      ],
+      "notes": [
+        "'Last 6 weeks' may include the current partial week; chose complete weeks only",
+        "Email column name never named in the session; added --email-col flag",
+        "Dashboard may label weeks with year; followed 'week number' literally",
+        "Auto-trigger vs name-only invocation; chose auto-trigger",
+        "'Test accounts at 0' flag assumes there are normally some",
+        "Used stdlib csv + zoneinfo instead of pandas (Python 3.9.6 locally); handled trailing 'Z' manually"
+      ]
+    },
+    {
+      "eval_id": "team-skill-from-goal",
+      "eval_name": "team-skill-from-goal",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 8,
+        "failed": 0,
+        "total": 8,
+        "time_seconds": 283.4,
+        "tokens": 86342,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "The written skill's SKILL.md frontmatter uses only the portable fields (name, description, license, compatibility, metadata, allowed-tools), because the skill must also run on claude.ai",
+          "passed": true,
+          "evidence": "with_skill/outputs/whats-new-notes/SKILL.md lines 1-4: frontmatter holds only 'name: whats-new-notes' and 'description: ...'. No other keys. Both are in the portable set."
+        },
+        {
+          "text": "validate_skill.py reports 0 errors on the written skill folder",
+          "passed": true,
+          "evidence": "Re-ran: 'PASSED: 0 error(s), 0 warning(s) in .../with_skill/outputs/whats-new-notes'. Matches run-notes.md steps 7 and 11."
+        },
+        {
+          "text": "The skill states the 500-character limit per section and gives the reason (the Play Store cuts off longer text)",
+          "passed": true,
+          "evidence": "SKILL.md line 10: '**500 characters or less per section.** The Play Store cuts off anything longer, mid-sentence, and the team keeps iOS to the same limit so both stores match. A previous run wrote 900 characters and the store truncated it.' scripts/check_notes.py enforces LIMIT = 500 with the error '...the Play Store cuts off the rest'."
+        },
+        {
+          "text": "The skill says PRs labelled internal or chore are never mentioned and that no ticket or PR numbers appear",
+          "passed": true,
+          "evidence": "SKILL.md line 11: 'PRs with either label [internal or chore] are never mentioned. No PR or ticket numbers ever appear.' Step 3: 'Drop every PR labelled `internal` or `chore`.' The script flags #\\d+, ABC-123 ticket IDs and /pull/ links."
+        },
+        {
+          "text": "The skill gives the hotfix branch with the exact line \"Bug fixes and performance improvements.\"",
+          "passed": true,
+          "evidence": "SKILL.md step 2 (lines 21-25): 'A hotfix gets exactly one line in both sections, and nothing else:' followed by the code block 'Bug fixes and performance improvements.' check_notes.py --hotfix requires each section to be exactly HOTFIX_LINE."
+        },
+        {
+          "text": "The skill's description has a \"Not for\" clause covering PR descriptions or the internal changelog",
+          "passed": true,
+          "evidence": "Description ends: 'Not for writing PR descriptions or updating the internal CHANGELOG.md.' This covers both exclusions."
+        },
+        {
+          "text": "The skill's definition of done includes checking each section's character count",
+          "passed": true,
+          "evidence": "'Done when' line 54: 'The check prints PASS ... and you show the user the character count of each section.' The script prints '<name>: <count>/500 characters' per section and fails over 500."
+        },
+        {
+          "text": "An evals.md next to the written SKILL.md holds 5-8 test prompts, including one that should not trigger the skill and one that leaves out a key input",
+          "passed": true,
+          "evidence": "with_skill/outputs/evals.md holds 8 numbered test cases with success criteria. #6 'Key input missing (should ask, not guess)': 'Can you write the what's new text for our next app version?'. #8 'Should NOT trigger': 'Update CHANGELOG.md with the PRs merged since 4.2.0.' (plus an 'Also try' PR-description variant, so 9 prompt strings across 8 cases). Placement caveat: it sits beside the skill folder (outputs/evals.md), not inside it next to SKILL.md. That follows skill-builder's own 'next to the skill' wording, and run-notes explains it keeps the file out of the zip. Passed on substance."
+        }
+      ],
+      "notes": [
+        "How a hotfix is identified (assumed user says so or hotfix label)",
+        "'Same length' read as same 500 limit and same text except platform-labelled PRs",
+        "Unlabelled refactors folded into a generic stability line and flagged",
+        "UTF-16 count chosen; store counting unverified",
+        "evals.md placed beside the skill folder rather than inside it",
+        "gh example assumes milestone named after version",
+        "8 open assumptions listed in handoff.md for the user to confirm",
+        "Skipped the interview and confirmation because the user said answers were confirmed and they would be unavailable"
+      ]
+    },
+    {
+      "eval_id": "principles-from-article",
+      "eval_name": "principles-from-article",
+      "configuration": "old_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.83,
+        "passed": 5,
+        "failed": 1,
+        "total": 6,
+        "time_seconds": 90.3,
+        "tokens": 62705,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "The skill turns the post into 3-7 principles, each stated as something the agent does, rather than a summary of the post",
+          "passed": true,
+          "evidence": "error-messages/SKILL.md has 6 distinct principles, each phrased as an instruction: (1) answer the three questions, 'Every message answers three questions: What happened? Why? What now?' (line 8); (2) always end in an action, '\"What now\" is the one that can never be missing... So every message ends in an action' (line 8); (3) code last, 'put it after the human sentences' (line 17); (4) blame the system, 'The thing that failed is the subject of the sentence, not \"you\"' (line 21); (5) say it once, in plain words, 'No \"Oops!\", no \"Uh oh\", no jokes, at most one short apology' (line 22); (6) put it next to the thing that broke, 'If the request or code shows a message placed away from its field, say so' (line 23). The build order in lines 14-17 turns the three questions into steps. Each principle is an action with a reason, not a summary."
+        },
+        {
+          "text": "The skill keeps the post's signature terms: the three questions (What happened? Why? What now?) and \"no dead ends\"",
+          "passed": false,
+          "evidence": "The three questions are kept: 'Every message answers three questions: **What happened? Why? What now?**' (line 8) and 'Empty states follow the same three questions' (line 25). The term \"no dead ends\" is not. A grep finds 'dead end' only once, in a sentence copied from the post: 'A message with no next step is a dead end, and dead ends are where people give up.' (line 8). The skill never names the rule 'no dead ends'. The rule is phrased as 'ends in an action' / 'It ends in a concrete action', and the Done-when list and the review instructions do not use the term. The concept is kept but the signature term is not, so this fails under strict grading. The call is borderline."
+        },
+        {
+          "text": "The skill makes sense without the post: no instruction depends on \"the post\" or \"the article\" for its meaning",
+          "passed": true,
+          "evidence": "A grep of SKILL.md for 'post|article|author|blog' finds nothing. The post's examples are copied in directly ('You entered an invalid date' / 'That date isn't in a format we can read. Try 14/03/2026', 'Contact support with code 4F2'), and the rules give their reasons ('Jokes age badly when someone has just lost their work', 'where people have to hunt for the problem')."
+        },
+        {
+          "text": "The skill's description has a \"Not for\" clause covering log messages or exception names",
+          "passed": true,
+          "evidence": "Description (line 3) ends: 'Not for log messages, exception or error class names, or other text only developers read.'"
+        },
+        {
+          "text": "The handoff gives 2-3 road-test prompts, including one that should not trigger the skill",
+          "passed": true,
+          "evidence": "handoff.md 'Road-test plan' lists 3 prompts: 1 the file upload over 25 MB (should run), 2 'Review these: ...' (should run), 3 'Add a log line and a custom exception class for when the payment webhook fails signature verification.' marked 'The skill should *not* run.' Each prompt says what success looks like. There is no missing-input prompt, but the assertion does not ask for one."
+        },
+        {
+          "text": "validate_skill.py reports 0 errors on the written skill folder",
+          "passed": true,
+          "evidence": "The caller confirmed it: 0 errors, 0 warnings. run-notes.md steps 8 and 9 also show 'PASSED: 0 error(s), 0 warning(s) in .../old_skill/outputs/error-messages', including the re-run after the sed rename."
+        }
+      ],
+      "notes": [
+        "How to apply the three questions to empty states",
+        "The review output format is invented",
+        "The placement rule may be too weak with text-only output",
+        "At most one apology is allowed",
+        "Install scope is personal",
+        "${CLAUDE_SKILL_DIR} was not set, so the validator ran by its absolute path"
+      ]
+    },
+    {
+      "eval_id": "skill-from-session-transcript",
+      "eval_name": "skill-from-session-transcript",
+      "configuration": "old_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 7,
+        "failed": 0,
+        "total": 7,
+        "time_seconds": 131.8,
+        "tokens": 65634,
+        "tool_calls": 16,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "The skill excludes accounts whose email ends in @example-test.com and says why (they are internal test accounts that inflate the count)",
+          "passed": true,
+          "evidence": "SKILL.md line 10: 'Drop every row whose email ends with `@example-test.com` (case-insensitive). Those are our own test accounts.'; line 8: 'keeping test accounts inflates every week'. Script line 71: `if email.endswith(TEST_DOMAIN): test += 1; continue` after `.strip().lower()`. Grader test: 'qa@EXAMPLE-TEST.com' row dropped (week 42 = 1)."
+        },
+        {
+          "text": "The skill converts created_at from UTC to Europe/Oslo and groups by ISO week starting Monday, with the reason (to match the dashboard)",
+          "passed": true,
+          "evidence": "SKILL.md line 8: 'The numbers must match the signups dashboard. The dashboard counts in Europe/Oslo time with ISO weeks starting Monday'; line 11: '`created_at` is in UTC. Convert it to `Europe/Oslo` before assigning a week.'; line 12: 'Group by ISO week (Monday start).' Script: `parse_utc(raw).astimezone(OSLO).date()`, Monday via `weekday()`, label `isocalendar()[1]`. Grader test gave identical, correct buckets to with_skill (Oct 11 22:30Z -> wk 42; Nov 8 22:30Z -> wk 45, 23:30 -> wk 46; year boundary 52, 1, 2). Caveat: the stated reason 'Counting in UTC moves Sunday-evening signups (22:00\u201300:00 UTC) into the next week' is inverted (it's Oslo time that puts them in the next week) and ignores that in winter only 23:00\u201300:00 UTC shifts; the rule and reason (dashboard match) are still present."
+        },
+        {
+          "text": "The skill specifies the output table: week number, signups, and % change from the previous week rounded to one decimal",
+          "passed": true,
+          "evidence": "SKILL.md 'Table format': 'Columns are exactly `Week | Signups | % change`. % change is against the previous week, rounded to one decimal with a sign (`+2.1%`), and `n/a` when the previous week had 0.' Script `pct_change` rounds to 1 decimal; grader run produced '| 42 | 1 | -50.0% |'."
+        },
+        {
+          "text": "The pandas calculation is bundled as a script in scripts/ and SKILL.md gives the command to run it",
+          "passed": true,
+          "evidence": "scripts/weekly_signups.py exists; SKILL.md line 20: `python3 \"${CLAUDE_SKILL_DIR}/scripts/weekly_signups.py\" signups.csv`. Script is standard library (csv + zoneinfo), not pandas, as stated in its docstring; passed on substance (calculation bundled + run command). Note the command hardcodes `signups.csv` even though step 1 says to use another file if named."
+        },
+        {
+          "text": "The skill has no wording that only makes sense with the original session in mind (e.g. \"as discussed\", \"like last time\", \"the session\")",
+          "passed": true,
+          "evidence": "grep for 'as discussed|like last time|the session|yesterday|you said|earlier': no hits. The only quoted phrase, '\"Last 6 weeks\" means the 6 complete ISO weeks before the current one', reads as a definition of a typical request. Minor: 'The script below applies all three' refers forward to the Steps section, not to the session."
+        },
+        {
+          "text": "The handoff lists the assumptions made for gaps the session didn't answer (e.g. where the CSV lives or how many weeks to report)",
+          "passed": true,
+          "evidence": "handoff.md 'Assumptions (please check)' lists 9 items incl. '\"Last 6 weeks\" means the 6 complete ISO weeks before the current one', 'The column names are `email` and `created_at`... `email` is a guess', '`created_at` is ISO 8601', '`weekly_signups.md` is overwritten each run. It's written in the working directory.' CSV location (signups.csv in working dir) is in SKILL.md step 1, not flagged as an assumption."
+        },
+        {
+          "text": "validate_skill.py reports 0 errors on the written skill folder",
+          "passed": true,
+          "evidence": "Grader reran: 'PASSED: 0 error(s), 0 warning(s)'. Matches run-notes step 7."
+        }
+      ],
+      "notes": [
+        "Whether 'last 6 weeks' includes the current partial week; chose complete weeks",
+        "Email column name guessed as 'email'",
+        "Automatic vs by-name invocation; kept automatic",
+        "Used stdlib csv + zoneinfo instead of pandas"
+      ]
+    },
+    {
+      "eval_id": "team-skill-from-goal",
+      "eval_name": "team-skill-from-goal",
+      "configuration": "old_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.88,
+        "passed": 7,
+        "failed": 1,
+        "total": 8,
+        "time_seconds": 162.9,
+        "tokens": 71006,
+        "tool_calls": 0,
+        "errors": 1
+      },
+      "expectations": [
+        {
+          "text": "The written skill's SKILL.md frontmatter uses only the portable fields (name, description, license, compatibility, metadata, allowed-tools), because the skill must also run on claude.ai",
+          "passed": true,
+          "evidence": "old_skill/outputs/app-whats-new/SKILL.md lines 1-4: frontmatter holds only 'name: app-whats-new' and 'description: ...'."
+        },
+        {
+          "text": "validate_skill.py reports 0 errors on the written skill folder",
+          "passed": true,
+          "evidence": "Re-ran: 'PASSED: 0 error(s), 0 warning(s) in .../old_skill/outputs/app-whats-new'."
+        },
+        {
+          "text": "The skill states the 500-character limit per section and gives the reason (the Play Store cuts off longer text)",
+          "passed": true,
+          "evidence": "SKILL.md line 8: 'The Play Store cuts off anything past 500 characters mid-sentence, and we hold the iOS section to the same limit so the two stay the same length.' The script enforces LIMIT = 500."
+        },
+        {
+          "text": "The skill says PRs labelled internal or chore are never mentioned and that no ticket or PR numbers appear",
+          "passed": true,
+          "evidence": "SKILL.md line 10: 'PRs labelled `internal` or `chore` are never mentioned, not even reworded.' Step 4: 'No PR or ticket numbers. Strip them from titles before you rewrite.' The script flags #\\d+, ABC-123 and 'PR 123' patterns."
+        },
+        {
+          "text": "The skill gives the hotfix branch with the exact line \"Bug fixes and performance improvements.\"",
+          "passed": true,
+          "evidence": "SKILL.md step 2: 'both sections are exactly this one line and nothing else:' followed by 'Bug fixes and performance improvements.' Caveat not covered by the assertion: the same step says 'Skip to step 5', which skips step 4, where release-notes.md is written."
+        },
+        {
+          "text": "The skill's description has a \"Not for\" clause covering PR descriptions or the internal changelog",
+          "passed": true,
+          "evidence": "Description ends: 'Not for PR descriptions or the internal CHANGELOG.md.'"
+        },
+        {
+          "text": "The skill's definition of done includes checking each section's character count",
+          "passed": true,
+          "evidence": "'Done when' line 54: 'The check prints PASS, and both character counts are shown to the user.' The script prints '<name>: <count>/500 characters'."
+        },
+        {
+          "text": "An evals.md next to the written SKILL.md holds 5-8 test prompts, including one that should not trigger the skill and one that leaves out a key input",
+          "passed": false,
+          "evidence": "No evals.md anywhere in old_skill/outputs (files: app-whats-new/, app-whats-new.zip, handoff.md, run-notes.md, script-tests/*.md). handoff.md 'Road-test plan' gives only 3 prompts inline (normal release, hotfix, should-not-trigger), with no missing-key-input prompt. That is below the 5-8 required for a team skill."
+        }
+      ],
+      "notes": [
+        "Confirmation gate skipped since user unavailable",
+        "Plain-text output chosen (no markdown bullets)",
+        "'Same length' read as identical lines except platform-only",
+        "Hotfix detection: user says so or every PR has hotfix label, else ask",
+        "How a release's PRs are defined",
+        "${CLAUDE_SKILL_DIR} used with a fallback for claude.ai",
+        "Ticket regex false positives",
+        "8 assumptions listed in handoff.md",
+        "First script-test loop passed '--hotfix' as part of the filename (zsh word splitting); fixed in the test harness"
+      ]
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 0.9433,
+        "stddev": 0.0981,
+        "min": 0.83,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 235.6667,
+        "stddev": 41.462,
+        "min": 208.6,
+        "max": 283.4
+      },
+      "tokens": {
+        "mean": 80480.0,
+        "stddev": 5317.7224,
+        "min": 75966,
+        "max": 86342
+      }
+    },
+    "old_skill": {
+      "pass_rate": {
+        "mean": 0.9033,
+        "stddev": 0.0874,
+        "min": 0.83,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 128.3333,
+        "stddev": 36.4239,
+        "min": 90.3,
+        "max": 162.9
+      },
+      "tokens": {
+        "mean": 66448.3333,
+        "stddev": 4209.9886,
+        "min": 62705,
+        "max": 71006
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.04",
+      "time_seconds": "+107.3",
+      "tokens": "+14032"
+    }
+  },
+  "notes": [
+    "Only 1 run per configuration, so \u00b1std reflects spread across the 3 tests, not run-to-run noise. Treat the +4pt pass-rate delta as directional.",
+    "Pass rates barely separate the versions: 14 of 21 assertions pass for both (presence checks: validator, 'Not for', frontmatter, 'has a reason'). The graders flagged these as non-discriminating.",
+    "Where the versions differ is quality the assertions miss: the cold read (new) caught a real bug in 2 of 3 runs (hotfix branch skipping the write step; 7 and 11 reader issues fixed in the other runs), and the old version wrote a wrong 'why' for the UTC/Oslo rule in test 3.",
+    "Cost: the new version takes ~1.8x the time (+107s) and +14k tokens (+21%), mostly from the cold-read subagent.",
+    "Two wording problems in skill-builder itself: (1) personal road-test plans asked for 2-3 prompts but also 'always' a negative and a missing-input prompt, so test 2 produced 4 and failed; (2) 'evals.md next to the skill' is ambiguous (inside vs beside the skill folder)."
+  ]
+}

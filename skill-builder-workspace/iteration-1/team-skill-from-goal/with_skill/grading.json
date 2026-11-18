@@ -1,0 +1,149 @@
+{
+  "expectations": [
+    {
+      "text": "The written skill's SKILL.md frontmatter uses only the portable fields (name, description, license, compatibility, metadata, allowed-tools), because the skill must also run on claude.ai",
+      "passed": true,
+      "evidence": "with_skill/outputs/whats-new-notes/SKILL.md lines 1-4: frontmatter holds only 'name: whats-new-notes' and 'description: ...'. No other keys. Both are in the portable set."
+    },
+    {
+      "text": "validate_skill.py reports 0 errors on the written skill folder",
+      "passed": true,
+      "evidence": "Re-ran: 'PASSED: 0 error(s), 0 warning(s) in .../with_skill/outputs/whats-new-notes'. Matches run-notes.md steps 7 and 11."
+    },
+    {
+      "text": "The skill states the 500-character limit per section and gives the reason (the Play Store cuts off longer text)",
+      "passed": true,
+      "evidence": "SKILL.md line 10: '**500 characters or less per section.** The Play Store cuts off anything longer, mid-sentence, and the team keeps iOS to the same limit so both stores match. A previous run wrote 900 characters and the store truncated it.' scripts/check_notes.py enforces LIMIT = 500 with the error '...the Play Store cuts off the rest'."
+    },
+    {
+      "text": "The skill says PRs labelled internal or chore are never mentioned and that no ticket or PR numbers appear",
+      "passed": true,
+      "evidence": "SKILL.md line 11: 'PRs with either label [internal or chore] are never mentioned. No PR or ticket numbers ever appear.' Step 3: 'Drop every PR labelled `internal` or `chore`.' The script flags #\\d+, ABC-123 ticket IDs and /pull/ links."
+    },
+    {
+      "text": "The skill gives the hotfix branch with the exact line \"Bug fixes and performance improvements.\"",
+      "passed": true,
+      "evidence": "SKILL.md step 2 (lines 21-25): 'A hotfix gets exactly one line in both sections, and nothing else:' followed by the code block 'Bug fixes and performance improvements.' check_notes.py --hotfix requires each section to be exactly HOTFIX_LINE."
+    },
+    {
+      "text": "The skill's description has a \"Not for\" clause covering PR descriptions or the internal changelog",
+      "passed": true,
+      "evidence": "Description ends: 'Not for writing PR descriptions or updating the internal CHANGELOG.md.' This covers both exclusions."
+    },
+    {
+      "text": "The skill's definition of done includes checking each section's character count",
+      "passed": true,
+      "evidence": "'Done when' line 54: 'The check prints PASS ... and you show the user the character count of each section.' The script prints '<name>: <count>/500 characters' per section and fails over 500."
+    },
+    {
+      "text": "An evals.md next to the written SKILL.md holds 5-8 test prompts, including one that should not trigger the skill and one that leaves out a key input",
+      "passed": true,
+      "evidence": "with_skill/outputs/evals.md holds 8 numbered test cases with success criteria. #6 'Key input missing (should ask, not guess)': 'Can you write the what's new text for our next app version?'. #8 'Should NOT trigger': 'Update CHANGELOG.md with the PRs merged since 4.2.0.' (plus an 'Also try' PR-description variant, so 9 prompt strings across 8 cases). Placement caveat: it sits beside the skill folder (outputs/evals.md), not inside it next to SKILL.md. That follows skill-builder's own 'next to the skill' wording, and run-notes explains it keeps the file out of the zip. Passed on substance."
+    }
+  ],
+  "summary": {
+    "passed": 8,
+    "failed": 0,
+    "total": 8,
+    "pass_rate": 1.0
+  },
+  "execution_metrics": {
+    "tool_calls": {},
+    "total_tool_calls": 0,
+    "total_steps": 14,
+    "errors_encountered": 0,
+    "output_chars": 36768,
+    "transcript_chars": 8114
+  },
+  "timing": {
+    "executor_duration_seconds": 283.4,
+    "total_duration_seconds": 283.4
+  },
+  "claims": [
+    {
+      "claim": "Validator passes with 0 errors, 0 warnings",
+      "type": "factual",
+      "verified": true,
+      "evidence": "Re-ran validate_skill.py: PASSED 0/0."
+    },
+    {
+      "claim": "Frontmatter uses only name and description so it uploads to claude.ai",
+      "type": "factual",
+      "verified": true,
+      "evidence": "SKILL.md lines 1-4."
+    },
+    {
+      "claim": "check_notes.py catches the 900-char overflow, #4312, ticket IDs, 'crash', wrong section order, and text above headings",
+      "type": "process",
+      "verified": true,
+      "evidence": "Matches the code: BANNED patterns, the LIMIT check, the SECTIONS order check and the text-above-first-heading check. Spot test: a bulleted file passes at 54/500."
+    },
+    {
+      "claim": "A cold-read subagent was run and its findings were fixed",
+      "type": "process",
+      "verified": true,
+      "evidence": "run-notes steps 9-10 list the findings. The fixes are visible in SKILL.md: the hotfix branch now writes the file, there is one merged stability line, enhancement maps to features, and labels match case-insensitively."
+    },
+    {
+      "claim": "Zip has the folder at its root with no __pycache__",
+      "type": "factual",
+      "verified": true,
+      "evidence": "unzip -l shows whats-new-notes/, scripts/check_notes.py, SKILL.md only."
+    },
+    {
+      "claim": "Character counting matches the stores",
+      "type": "quality",
+      "verified": false,
+      "evidence": "The run itself softened this to 'counts conservatively' (UTF-16). Store counting was not verified, which the run says honestly."
+    }
+  ],
+  "user_notes_summary": {
+    "uncertainties": [
+      "How a hotfix is identified (assumed user says so or hotfix label)",
+      "'Same length' read as same 500 limit and same text except platform-labelled PRs",
+      "Unlabelled refactors folded into a generic stability line and flagged",
+      "UTF-16 count chosen; store counting unverified",
+      "evals.md placed beside the skill folder rather than inside it",
+      "gh example assumes milestone named after version"
+    ],
+    "needs_review": [
+      "8 open assumptions listed in handoff.md for the user to confirm"
+    ],
+    "workarounds": [
+      "Skipped the interview and confirmation because the user said answers were confirmed and they would be unavailable"
+    ]
+  },
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "assertion": "validate_skill.py reports 0 errors on the written skill folder",
+        "reason": "Trivially satisfied: a careless skill with only name+description and no real content would also pass validate_skill.py with 0 errors. It is a floor check, not a discriminator."
+      },
+      {
+        "assertion": "The written skill's SKILL.md frontmatter uses only the portable fields (name, description, license, compatibility, metadata, allowed-tools), because the skill must also run on claude.ai",
+        "reason": "Also passes for a careless output; nearly every generated skill uses only name+description. It only discriminates if the run is tempted to add Claude Code-only fields (argument-hint, etc.)."
+      },
+      {
+        "assertion": "The skill's definition of done includes checking each section's character count",
+        "reason": "Passes for any skill that says 'show the character counts'. It does not check that counting is actually enforced by a script or how newlines/bullets/emoji are counted, which is where the real 900-char failure would recur."
+      },
+      {
+        "assertion": "An evals.md next to the written SKILL.md holds 5-8 test prompts, including one that should not trigger the skill and one that leaves out a key input",
+        "reason": "'Next to the written SKILL.md' conflicts with skill-builder/SKILL.md line 110 ('saved as evals.md next to the skill'). with_skill put it beside the skill folder (outputs/evals.md) on purpose so it does not ship in the zip. Reword the assertion to 'next to the skill folder (not inside it)' or decide which is wanted."
+      },
+      {
+        "reason": "No assertion checks the 'hidden knowledge' answers: features before fixes and 'stability improvements' instead of 'crash'. Both runs include them, but a run that dropped them would still pass all 8 assertions."
+      },
+      {
+        "reason": "No assertion checks how the skill handles the user's own failure example: 'Refactor auth module' is internal work, but the user never said it carried the internal label. Under the user's definition an unlabelled refactor is user-facing. with_skill handles this (generic stability line + flag as possibly mislabelled, ask for labels if none); old_skill assumes it was labelled internal and has no path for an unlabelled list. This is the most discriminating gap between the runs."
+      },
+      {
+        "reason": "No assertion checks that the hotfix branch still produces release-notes.md. old_skill's step 2 says 'Skip to step 5', which skips step 4 (writing the file) before running the check; with_skill's cold read caught and fixed this exact bug. An assertion like 'the hotfix branch writes release-notes.md and then runs the check' would discriminate."
+      },
+      {
+        "reason": "No assertion checks the 'every user-facing PR covered' done-criterion is made visible (e.g. a coverage table or counts that add up). Both runs have it, but it is the guard against the lazy 'drop PRs to fit 500' failure."
+      }
+    ],
+    "overall": "Assertions 1-7 are mostly presence checks that a careless run would also pass. Only #8 separated the runs. Add assertions on hidden knowledge, the unlabelled-refactor case, the hotfix branch still writing the file, and coverage accounting."
+  }
+}

@@ -1,0 +1,7 @@
+schema_version: "1.1"
+name: skill-from-session-transcript
+expected_outcome: |
+  A personal skill extracted from the session: the steps in order, the test-account filter and the
+  Europe/Oslo + ISO-week rule written as gotchas with their reasons (from the two dead ends), the output
+  table format, the repeated pandas code bundled as a script, and nothing that only makes sense with the
+  session in mind.

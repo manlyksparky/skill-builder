@@ -1,0 +1,144 @@
+{
+  "expectations": [
+    {
+      "text": "The written skill's SKILL.md frontmatter uses only the portable fields (name, description, license, compatibility, metadata, allowed-tools), because the skill must also run on claude.ai",
+      "passed": true,
+      "evidence": "old_skill/outputs/app-whats-new/SKILL.md lines 1-4: frontmatter holds only 'name: app-whats-new' and 'description: ...'."
+    },
+    {
+      "text": "validate_skill.py reports 0 errors on the written skill folder",
+      "passed": true,
+      "evidence": "Re-ran: 'PASSED: 0 error(s), 0 warning(s) in .../old_skill/outputs/app-whats-new'."
+    },
+    {
+      "text": "The skill states the 500-character limit per section and gives the reason (the Play Store cuts off longer text)",
+      "passed": true,
+      "evidence": "SKILL.md line 8: 'The Play Store cuts off anything past 500 characters mid-sentence, and we hold the iOS section to the same limit so the two stay the same length.' The script enforces LIMIT = 500."
+    },
+    {
+      "text": "The skill says PRs labelled internal or chore are never mentioned and that no ticket or PR numbers appear",
+      "passed": true,
+      "evidence": "SKILL.md line 10: 'PRs labelled `internal` or `chore` are never mentioned, not even reworded.' Step 4: 'No PR or ticket numbers. Strip them from titles before you rewrite.' The script flags #\\d+, ABC-123 and 'PR 123' patterns."
+    },
+    {
+      "text": "The skill gives the hotfix branch with the exact line \"Bug fixes and performance improvements.\"",
+      "passed": true,
+      "evidence": "SKILL.md step 2: 'both sections are exactly this one line and nothing else:' followed by 'Bug fixes and performance improvements.' Caveat not covered by the assertion: the same step says 'Skip to step 5', which skips step 4, where release-notes.md is written."
+    },
+    {
+      "text": "The skill's description has a \"Not for\" clause covering PR descriptions or the internal changelog",
+      "passed": true,
+      "evidence": "Description ends: 'Not for PR descriptions or the internal CHANGELOG.md.'"
+    },
+    {
+      "text": "The skill's definition of done includes checking each section's character count",
+      "passed": true,
+      "evidence": "'Done when' line 54: 'The check prints PASS, and both character counts are shown to the user.' The script prints '<name>: <count>/500 characters'."
+    },
+    {
+      "text": "An evals.md next to the written SKILL.md holds 5-8 test prompts, including one that should not trigger the skill and one that leaves out a key input",
+      "passed": false,
+      "evidence": "No evals.md anywhere in old_skill/outputs (files: app-whats-new/, app-whats-new.zip, handoff.md, run-notes.md, script-tests/*.md). handoff.md 'Road-test plan' gives only 3 prompts inline (normal release, hotfix, should-not-trigger), with no missing-key-input prompt. That is below the 5-8 required for a team skill."
+    }
+  ],
+  "summary": {
+    "passed": 7,
+    "failed": 1,
+    "total": 8,
+    "pass_rate": 0.88
+  },
+  "execution_metrics": {
+    "tool_calls": {},
+    "total_tool_calls": 0,
+    "total_steps": 12,
+    "errors_encountered": 1,
+    "output_chars": 31305,
+    "transcript_chars": 6230
+  },
+  "timing": {
+    "executor_duration_seconds": 162.9,
+    "total_duration_seconds": 162.9
+  },
+  "claims": [
+    {
+      "claim": "Validator passes with 0 errors, 0 warnings",
+      "type": "factual",
+      "verified": true,
+      "evidence": "Re-ran validate_skill.py: PASSED 0/0."
+    },
+    {
+      "claim": "check_notes.py flags overflow, #4312, JIRA-881, crash and markdown",
+      "type": "process",
+      "verified": true,
+      "evidence": "script-tests/bad.md exists, and the code has these patterns. Spot test: a file with '- ' bullets FAILs as 'markdown formatting', matching its plain-text-only rule."
+    },
+    {
+      "claim": "Judgment check 'Every instruction exact or explained: pass'",
+      "type": "quality",
+      "verified": false,
+      "evidence": "The hotfix step says 'Skip to step 5', which skips step 4 (writing release-notes.md), yet step 5 checks that file. A literal agent could run the check on a file that does not exist. No cold read was done to catch this (run-notes: 'Subagents: None started')."
+    },
+    {
+      "claim": "The prior failure 'Refactor auth module (#4312)' was labelled internal",
+      "type": "factual",
+      "verified": false,
+      "evidence": "SKILL.md line 44 states it was 'labelled `internal`', but the user only said it was 'internal work'. This invented detail hides the case where such a PR is unlabelled, which the skill has no path for."
+    },
+    {
+      "claim": "Zip has the folder at its root",
+      "type": "factual",
+      "verified": true,
+      "evidence": "unzip -l shows app-whats-new/, scripts/check_notes.py, SKILL.md."
+    }
+  ],
+  "user_notes_summary": {
+    "uncertainties": [
+      "Confirmation gate skipped since user unavailable",
+      "Plain-text output chosen (no markdown bullets)",
+      "'Same length' read as identical lines except platform-only",
+      "Hotfix detection: user says so or every PR has hotfix label, else ask",
+      "How a release's PRs are defined",
+      "${CLAUDE_SKILL_DIR} used with a fallback for claude.ai",
+      "Ticket regex false positives"
+    ],
+    "needs_review": [
+      "8 assumptions listed in handoff.md"
+    ],
+    "workarounds": [
+      "First script-test loop passed '--hotfix' as part of the filename (zsh word splitting); fixed in the test harness"
+    ]
+  },
+  "eval_feedback": {
+    "suggestions": [
+      {
+        "assertion": "validate_skill.py reports 0 errors on the written skill folder",
+        "reason": "Trivially satisfied: a careless skill with only name+description and no real content would also pass validate_skill.py with 0 errors. It is a floor check, not a discriminator."
+      },
+      {
+        "assertion": "The written skill's SKILL.md frontmatter uses only the portable fields (name, description, license, compatibility, metadata, allowed-tools), because the skill must also run on claude.ai",
+        "reason": "Also passes for a careless output; nearly every generated skill uses only name+description. It only discriminates if the run is tempted to add Claude Code-only fields (argument-hint, etc.)."
+      },
+      {
+        "assertion": "The skill's definition of done includes checking each section's character count",
+        "reason": "Passes for any skill that says 'show the character counts'. It does not check that counting is actually enforced by a script or how newlines/bullets/emoji are counted, which is where the real 900-char failure would recur."
+      },
+      {
+        "assertion": "An evals.md next to the written SKILL.md holds 5-8 test prompts, including one that should not trigger the skill and one that leaves out a key input",
+        "reason": "'Next to the written SKILL.md' conflicts with skill-builder/SKILL.md line 110 ('saved as evals.md next to the skill'). with_skill put it beside the skill folder (outputs/evals.md) on purpose so it does not ship in the zip. Reword the assertion to 'next to the skill folder (not inside it)' or decide which is wanted."
+      },
+      {
+        "reason": "No assertion checks the 'hidden knowledge' answers: features before fixes and 'stability improvements' instead of 'crash'. Both runs include them, but a run that dropped them would still pass all 8 assertions."
+      },
+      {
+        "reason": "No assertion checks how the skill handles the user's own failure example: 'Refactor auth module' is internal work, but the user never said it carried the internal label. Under the user's definition an unlabelled refactor is user-facing. with_skill handles this (generic stability line + flag as possibly mislabelled, ask for labels if none); old_skill assumes it was labelled internal and has no path for an unlabelled list. This is the most discriminating gap between the runs."
+      },
+      {
+        "reason": "No assertion checks that the hotfix branch still produces release-notes.md. old_skill's step 2 says 'Skip to step 5', which skips step 4 (writing the file) before running the check; with_skill's cold read caught and fixed this exact bug. An assertion like 'the hotfix branch writes release-notes.md and then runs the check' would discriminate."
+      },
+      {
+        "reason": "No assertion checks the 'every user-facing PR covered' done-criterion is made visible (e.g. a coverage table or counts that add up). Both runs have it, but it is the guard against the lazy 'drop PRs to fit 500' failure."
+      }
+    ],
+    "overall": "Only assertion #8 failed, and only because this skill-builder version produced a 3-prompt inline plan, not an evals.md. The assertions miss this run's more serious flaws: the hotfix 'skip to step 5' bug and no handling of unlabelled PRs."
+  }
+}

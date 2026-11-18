@@ -1,0 +1,7 @@
+schema_version: "1.1"
+name: principles-from-article
+expected_outcome: |
+  A personal Claude Code skill that turns the post into 3-7 actionable principles (not a summary),
+  keeps the author's signature terms (the three questions, no dead ends, blame the system), stands
+  on its own without the post, has a "Not for" line covering log messages, and hands off a 2-3 prompt
+  road-test plan including a negative prompt.

@@ -1,0 +1,13 @@
+{
+  "eval_name": "skill-from-session-transcript",
+  "prompt": "Here's a session I had yesterday doing our weekly signup numbers. Turn this into a skill so I don't have to walk Claude through it every Monday. It's just for me, in Claude Code. I've pasted the session below; anything it doesn't answer, make a sensible call and flag it, I won't be around to answer questions.\n\n--- session ---\nMe: here's signups.csv, give me signups per week for the last 6 weeks\nClaude: [loads signups.csv with pandas, groups created_at by week] Week 41: 312, Week 42: 298 ...\nMe: those are too high, you're counting test accounts. anything with an email ending @example-test.com is ours, drop them\nClaude: [filters out @example-test.com] Week 41: 287, Week 42: 271 ...\nMe: still off vs the dashboard by a few each week\nClaude: created_at is in UTC. If the dashboard uses Oslo time, signups between 22:00 and 00:00 UTC on Sundays land in the next week.\nMe: yes, dashboard is Europe/Oslo. and weeks start Monday, ISO weeks\nClaude: [converts to Europe/Oslo, groups by ISO week] Week 41: 289, Week 42: 270 ... These match the dashboard.\nMe: great. put it in a table with week number, signups, and % change from the previous week, and round % to one decimal\nClaude: [writes weekly_signups.md with the table]\n--- end ---\n",
+  "assertions": [
+    "The skill excludes accounts whose email ends in @example-test.com and says why (they are internal test accounts that inflate the count)",
+    "The skill converts created_at from UTC to Europe/Oslo and groups by ISO week starting Monday, with the reason (to match the dashboard)",
+    "The skill specifies the output table: week number, signups, and % change from the previous week rounded to one decimal",
+    "The pandas calculation is bundled as a script in scripts/ and SKILL.md gives the command to run it",
+    "The skill has no wording that only makes sense with the original session in mind (e.g. \"as discussed\", \"like last time\", \"the session\")",
+    "The handoff lists the assumptions made for gaps the session didn't answer (e.g. where the CSV lives or how many weeks to report)",
+    "validate_skill.py reports 0 errors on the written skill folder"
+  ]
+}

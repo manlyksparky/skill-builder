@@ -1,0 +1,81 @@
+{
+  "expectations": [
+    {
+      "text": "The skill excludes accounts whose email ends in @example-test.com and says why (they are internal test accounts that inflate the count)",
+      "passed": true,
+      "evidence": "SKILL.md line 27: 'Any email ending `@example-test.com` (case-insensitive) is an internal account. Counting them was the first mismatch: weeks came out about 25 too high.' Script line 77: `.strip().lower().endswith(TEST_DOMAIN)` -> continue. Grader test: a 'qa@EXAMPLE-TEST.com' row in week 42 was dropped (week 42 = 1, not 2)."
+    },
+    {
+      "text": "The skill converts created_at from UTC to Europe/Oslo and groups by ISO week starting Monday, with the reason (to match the dashboard)",
+      "passed": true,
+      "evidence": "SKILL.md line 10: 'The numbers must match the dashboard. Three rules make them match ... count in Europe/Oslo time rather than UTC, and group by ISO week (Monday start)'; line 28: '`created_at` is stored in UTC, but the dashboard uses Europe/Oslo. Signups after 22:00 UTC on a Sunday (23:00 in winter) are already Monday in Oslo'. Script: `parse_utc(raw).astimezone(TZ)` with TZ=ZoneInfo('Europe/Oslo'); `week_monday` uses isoweekday; label `cur.isocalendar()[1]`. Grader test (--today 2026-11-16): 2026-10-11 22:30Z (CEST) -> week 42, 21:30Z -> week 41; 2026-11-08 22:30Z (CET) stays week 45, 23:30 -> week 46; year boundary run (--today 2026-01-12) labels 52, 1, 2 correctly."
+    },
+    {
+      "text": "The skill specifies the output table: week number, signups, and % change from the previous week rounded to one decimal",
+      "passed": true,
+      "evidence": "SKILL.md line 31: '% change. `(this week - previous week) / previous week`, rounded to one decimal, with a sign'; line 34: 'columns Week, Signups, % change and one row per reported week'. Script writes '| Week | Signups | % change |' and formats `{...:+.1f}%`; grader run produced e.g. '| 42 | 1 | -50.0% |'."
+    },
+    {
+      "text": "The pandas calculation is bundled as a script in scripts/ and SKILL.md gives the command to run it",
+      "passed": true,
+      "evidence": "scripts/weekly_signups.py exists; SKILL.md line 16: `python3 \"${CLAUDE_SKILL_DIR}/scripts/weekly_signups.py\" <path-to-csv>`. Note: the script reimplements the calculation with the standard library (csv + zoneinfo), not pandas; run-notes explain this was deliberate (no pandas dependency). Passed on the substance (calculation bundled + run command), not on literal pandas use. Script ran correctly on grader test CSVs."
+    },
+    {
+      "text": "The skill has no wording that only makes sense with the original session in mind (e.g. \"as discussed\", \"like last time\", \"the session\")",
+      "passed": true,
+      "evidence": "grep for 'as discussed|like last time|the session|yesterday|you said|earlier' in SKILL.md and script: no hits. Historical framing exists ('each one was found by a mismatch', 'Counting them was the first mismatch: weeks came out about 25 too high', 'That left each week off by a few') but each is self-contained and explains itself without the session."
+    },
+    {
+      "text": "The handoff lists the assumptions made for gaps the session didn't answer (e.g. where the CSV lives or how many weeks to report)",
+      "passed": true,
+      "evidence": "handoff.md section 'Assumptions I made (you weren't around, so please check these)' lists 10 items, incl. '\"Last 6 weeks\" means the last 6 complete ISO weeks', 'Columns are `created_at` and `email`', '`weekly_signups.md` is replaced each run', 'Timestamps without a timezone are read as UTC'. CSV location is covered in SKILL.md step 1 ($ARGUMENTS or signups.csv in working dir, otherwise ask) though not listed as a numbered assumption."
+    },
+    {
+      "text": "validate_skill.py reports 0 errors on the written skill folder",
+      "passed": true,
+      "evidence": "Grader reran: 'PASSED: 0 error(s), 1 warning(s)' (WARN argument-hint: Claude Code only), acceptable since user said Claude Code only. Matches run-notes step 11."
+    }
+  ],
+  "summary": {"passed": 7, "failed": 0, "total": 7, "pass_rate": 1.0},
+  "execution_metrics": {
+    "tool_calls": {"Read": 4, "Write": 4, "Edit": 2, "Bash": 10, "Agent": 1},
+    "total_tool_calls": 21,
+    "total_steps": 12,
+    "errors_encountered": 0,
+    "output_chars": 23801,
+    "transcript_chars": 5783,
+    "note": "No metrics.json; tool counts are estimates from run-notes.md. output_chars = SKILL.md + script + handoff.md; transcript_chars = run-notes.md."
+  },
+  "timing": {
+    "executor_duration_seconds": 208.6,
+    "total_duration_seconds": 208.6,
+    "total_tokens": 79132
+  },
+  "claims": [
+    {"claim": "A Sunday 23:30 UTC signup lands in the next week, a 22:30 UTC one stays (in November)", "type": "factual", "verified": true, "evidence": "Grader test: 2026-11-08 22:30Z counted in week 45, 23:30 in week 46."},
+    {"claim": "Signups after 22:00 UTC on a Sunday (23:00 in winter) are already Monday in Oslo", "type": "factual", "verified": true, "evidence": "Correct for CEST (UTC+2) / CET (UTC+1); confirmed by the October and November boundary rows in the grader test."},
+    {"claim": "Week 41 went from 312 to 287 after dropping test accounts", "type": "factual", "verified": true, "evidence": "Matches task.md session."},
+    {"claim": "Warns when the export ends before the last reported Sunday or starts after the baseline week", "type": "process", "verified": true, "evidence": "Grader test printed 'WARNING: export starts after 2026-09-28 (baseline week start)...'; script lines 119-122."},
+    {"claim": "A cold-read subagent raised seven issues, all fixed", "type": "process", "verified": true, "evidence": "Fixes visible in the final script (unparsed examples, --created-col/--email-col, window-only test count, coverage warnings)."}
+  ],
+  "user_notes_summary": {
+    "uncertainties": [
+      "'Last 6 weeks' may include the current partial week; chose complete weeks only",
+      "Email column name never named in the session; added --email-col flag",
+      "Dashboard may label weeks with year; followed 'week number' literally",
+      "Auto-trigger vs name-only invocation; chose auto-trigger",
+      "'Test accounts at 0' flag assumes there are normally some"
+    ],
+    "needs_review": [],
+    "workarounds": ["Used stdlib csv + zoneinfo instead of pandas (Python 3.9.6 locally); handled trailing 'Z' manually"]
+  },
+  "eval_feedback": {
+    "suggestions": [
+      {"assertion": "The pandas calculation is bundled as a script in scripts/ and SKILL.md gives the command to run it", "reason": "Both runs wrote stdlib scripts, not pandas. The assertion's wording is literal about pandas; reword to 'the calculation (filter, Oslo conversion, ISO-week grouping, % change) is bundled as a script...' and add a check that the script produces correct buckets on a boundary CSV (Sunday 22:30Z in CEST and CET). As written, an existence check would pass a script that groups in UTC."},
+      {"assertion": "The skill converts created_at from UTC to Europe/Oslo and groups by ISO week starting Monday, with the reason (to match the dashboard)", "reason": "Would pass a skill that states the rule but whose explanation is wrong. Neither assertion checks DST correctness of the stated reason (22:00 UTC in summer, 23:00 in winter); the old_skill run states it wrongly/inverted and still passes."},
+      {"assertion": "The handoff lists the assumptions made for gaps the session didn't answer (e.g. where the CSV lives or how many weeks to report)", "reason": "Any non-empty assumptions list passes. Consider requiring that each flagged assumption is also reflected in the skill (e.g. the 6-week default is a script flag, the missing-CSV case is handled)."},
+      {"reason": "No assertion covers the missing-input case (no signups.csv present) or export-freshness checks, which is where the two runs differ most in practice."}
+    ],
+    "overall": "All 7 pass, but several assertions are presence checks that a careless output would also pass; add a behavioral check on the script with a boundary CSV."
+  }
+}

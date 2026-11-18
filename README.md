@@ -99,15 +99,40 @@ The skill uses only the portable frontmatter fields, so any agent that supports 
 
 ## Usage
 
-Ask for a new skill in plain language:
+### Starting a skill
 
-> I want a skill that turns our sprint retro notes into a ticket for each action item.
+Ask in plain language. The skill picks up the request on its own, and in Claude Code you can also call it directly with `/skill-builder`. There are three ways to start:
 
-> Turn what we just did into a skill.
+| Start from | Example prompt | What happens first |
+| --- | --- | --- |
+| A goal | "I want a skill that turns our sprint retro notes into a ticket for each action item." | The interview starts straight away. |
+| Something you just did | "Turn what we just did into a skill." | It drafts the steps, decisions and dead ends from the conversation, then asks only about the gaps. |
+| Source material | "Make a skill from this article on writing good error messages." *(paste or attach it)* | It pulls out 3–7 principles that change what the agent does, keeps the author's key terms, and asks about the rest. |
 
-> Help me build a skill for writing release notes in our house style.
+You don't need a fully formed idea. If you haven't stated a goal, it will ask for one.
 
-You don't need a fully formed idea. If you haven't stated a goal, the skill will ask for one.
+### During the interview
+
+- Expect 3–5 questions at a time, usually over three rounds or fewer. Each question comes with a best guess, so most answers are a confirmation.
+- The answers that make the biggest difference are **real failures** (what you asked, what the agent did, what you wanted) and **hidden knowledge** (conventions or reasons the agent couldn't find by looking). These become the skill's gotchas, so concrete beats general.
+- Say whether the skill is just for you, for a team or public, and whether it runs in Claude Code, on claude.ai, or both. This sets how much testing it hands over and which frontmatter fields it can safely use.
+- Say "just write it" at any point to skip ahead. Unanswered questions become marked assumptions for you to check.
+- Before writing anything, it summarises what it heard and waits for you to confirm.
+
+### What you get back
+
+- The skill folder: `SKILL.md`, plus any `references/`, `scripts/` or `assets/` it needs, saved where your environment expects it (or shown as code blocks if it can't write files).
+- The check results: validator output (or a hand checklist), the judgment checks, and the cold-read findings.
+- Any assumptions still open.
+- A road-test plan: 2–3 prompts for a personal skill, or 5–8 saved as `evals.md` for a team or public one. It always includes a prompt that should *not* trigger the skill and one with a key input missing.
+
+### Fixing a skill
+
+After road-testing, come back with the specifics:
+
+> Fix my `release-notes` skill: I ran "draft the changelog for 2.4", it didn't open, I expected it to write release notes.
+
+It changes only the lines responsible and adds your prompt to the test plan. Fixing works on any skill, not only ones it wrote.
 
 **What it isn't for:** benchmarking a skill, running evals on one, or rewriting an existing skill wholesale.
 
@@ -129,6 +154,8 @@ skill-builder/
 │   ├── references/
 │   │   ├── revise.md            # fixing mode, read after road-test failures
 │   │   ├── example-skill.md     # worked example and description before/after pairs
+│   │   ├── authoring-patterns.md  # workflows, scripts, output formats, reading test runs
+│   │   ├── policy-skills.md     # skills that encode a team policy, and enforcing them
 │   │   └── packaging.md         # where to save, frontmatter fields, script rules
 │   └── scripts/
 │       └── validate_skill.py    # stdlib-only skill validator
